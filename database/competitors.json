@@ -1,8 +1,31 @@
 [
-  {
-    "name": "Cafe A",
-    "lat": 23.03,
-    "lng": 72.58,
-    "type": "restaurant"
-  }
+  { "name": "McDonald's CP",         "lat": 28.6315, "lng": 77.2167, "type": "restaurant", "size": "large"  },
+  { "name": "KFC Connaught Place",   "lat": 28.6300, "lng": 77.2180, "type": "restaurant", "size": "large"  },
+  { "name": "Starbucks CP",          "lat": 28.6325, "lng": 77.2155, "type": "restaurant", "size": "medium" },
+  { "name": "Reliance Lajpat",       "lat": 28.5640, "lng": 77.2360, "type": "retail",     "size": "large"  },
+  { "name": "Big Bazaar Lajpat",     "lat": 28.5650, "lng": 77.2400, "type": "retail",     "size": "large"  },
+  { "name": "V3S Mall Laxmi Nagar",  "lat": 28.6300, "lng": 77.2780, "type": "retail",     "size": "large"  },
+  { "name": "Dominos Dwarka",        "lat": 28.5940, "lng": 77.0480, "type": "restaurant", "size": "medium" },
+  { "name": "Select Citywalk Saket", "lat": 28.5270, "lng": 77.2060, "type": "retail",     "size": "large"  },
+  { "name": "InOrbit Malad Mumbai",  "lat": 19.1680, "lng": 72.8471, "type": "retail",     "size": "large"  },
+  { "name": "Bandra Café Coffee Day","lat": 19.0590, "lng": 72.8310, "type": "restaurant", "size": "small"  },
+  { "name": "Linking Road Retail",   "lat": 19.0620, "lng": 72.8320, "type": "retail",     "size": "medium" },
+  { "name": "Pizza Hut Andheri",     "lat": 19.1140, "lng": 72.8690, "type": "restaurant", "size": "medium" },
+  { "name": "Forum Mall Koramangala","lat": 12.9347, "lng": 77.6101, "type": "retail",     "size": "large"  },
+  { "name": "Starbucks Whitefield",  "lat": 12.9710, "lng": 77.7500, "type": "restaurant", "size": "medium" },
+  { "name": "Indiranagar 100ft Box", "lat": 12.9780, "lng": 77.6385, "type": "restaurant", "size": "medium" },
+  { "name": "IKEA Hyderabad",        "lat": 17.4330, "lng": 78.3818, "type": "retail",     "size": "large"  },
+  { "name": "Cafe Bahar Hyderabad",  "lat": 17.4135, "lng": 78.4470, "type": "restaurant", "size": "small"  },
+  { "name": "Seasons Mall Pune",     "lat": 18.5130, "lng": 73.8989, "type": "retail",     "size": "large"  },
+  { "name": "Koregaon Park Cafe",    "lat": 18.5370, "lng": 73.8960, "type": "restaurant", "size": "medium" },
+  { "name": "Express Avenue Chennai","lat": 13.0500, "lng": 80.2591, "type": "retail",     "size": "large"  },
+  { "name": "T Nagar Saravana",      "lat": 13.0420, "lng": 80.2350, "type": "retail",     "size": "large"  },
+  { "name": "South City Mall Kolkata","lat": 22.5078,"lng": 88.3697, "type": "retail",     "size": "large"  },
+  { "name": "Park Street Mocambo",   "lat": 22.5548, "lng": 88.3510, "type": "restaurant", "size": "medium" },
+  { "name": "Ahmedabad Crossword",   "lat": 23.0306, "lng": 72.5620, "type": "retail",     "size": "medium" },
+  { "name": "Noida Sec18 DT Mall",   "lat": 28.5710, "lng": 77.3226, "type": "retail",     "size": "large"  },
+  { "name": "Cyber Hub Gurgaon",     "lat": 28.4958, "lng": 77.0892, "type": "restaurant", "size": "large"  },
+  { "name": "DLF Cyber City Retail", "lat": 28.4968, "lng": 77.0886, "type": "retail",     "size": "large"  },
+  { "name": "Jaipur World Trade",    "lat": 26.9131, "lng": 75.7857, "type": "retail",     "size": "medium" },
+  { "name": "Hazratganj Lucknow KFC","lat": 26.8524, "lng": 80.9440, "type": "restaurant", "size": "medium" }
 ]

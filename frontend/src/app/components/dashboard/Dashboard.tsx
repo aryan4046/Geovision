@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar, Weights } from "./Sidebar";
 import { MapView } from "./MapView";
 import { InsightsPanel } from "./InsightsPanel";
 import { AIChatbot } from "../chatbot/AIChatbot";
 import { useLocationAnalysis } from "../../../hooks/useLocationAnalysis";
+import { useLocationContext } from "../../../context/LocationContext";
 
 export type LocationData = {
   id: string;
@@ -22,6 +23,8 @@ export type LocationData = {
 
 export function Dashboard() {
   const { selectedLocation, loading, analyzeLocation, competitorImpact } = useLocationAnalysis();
+  const { setSelectedLocation: setCtxLocation, setBusinessType: setCtxBusinessType, setWeights: setCtxWeights } = useLocationContext();
+
   const [businessType, setBusinessType] = useState<string>("restaurant");
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showChatbot, setShowChatbot] = useState(false);
@@ -32,8 +35,26 @@ export function Dashboard() {
   });
 
   const handleMapClick = (lat: number, lng: number) => {
-    analyzeLocation(lat, lng, weights, businessType);
+    analyzeLocation(lat, lng, weights, businessType).then((loc: any) => {
+      if (loc) {
+        setCtxLocation(loc);
+        setCtxBusinessType(businessType);
+        setCtxWeights(weights);
+      }
+    }).catch(() => {});
   };
+
+  // Re-run analysis if businessType or weights change while a location is selected
+  useEffect(() => {
+    if (selectedLocation) {
+      handleMapClick(selectedLocation.lat, selectedLocation.lng);
+    }
+  }, [businessType, weights]);
+
+  // Also update context whenever selectedLocation changes
+  if (selectedLocation && !loading) {
+    setCtxLocation(selectedLocation);
+  }
 
   return (
     <div className="h-screen w-full flex overflow-hidden" style={{ background: "linear-gradient(135deg, #04080f 0%, #080c18 50%, #0c0818 100%)" }}>

@@ -13,7 +13,7 @@ export function Recommendations() {
   useEffect(() => {
     apiService.fetchRecommendations()
       .then(data => {
-        setRecommendations(data.recommendations || []);
+        setRecommendations(data.locations || data.recommendations || []);
       })
       .catch(err => console.error("Error fetching recommendations: ", err))
       .finally(() => setLoading(false));

@@ -58,6 +58,8 @@ def calculate_score(data: dict[str, Any]) -> dict[str, Any]:
     # Invert competition score: more competitors → lower sub-score
     competition_score = 1.0 - features["competition"]
 
+    import math
+    
     # Weighted sum of the three primary factors
     raw_score = (
         features["population"]    * weights["population"]
@@ -65,10 +67,14 @@ def calculate_score(data: dict[str, Any]) -> dict[str, Any]:
         + features["accessibility"] * weights["accessibility"]
     )
 
+    # Score Boosting Curve: Indian markets are inherently good. 
+    # Map raw_score (0-1) to an expanded 60-100 range for better visual scale
+    base_score = 60 + (raw_score * 30)
+
     # Bonus boost from footfall and avg_income (small weight, max +10 pts)
     secondary_boost = (features["footfall"] + features["avg_income"]) * 5  # each up to 5 pts
 
-    final_score = min(100, round(raw_score * 100 + secondary_boost))
+    final_score = int(min(100, max(60, round(base_score + secondary_boost))))
 
     factors = {
         "population":    features["population"],

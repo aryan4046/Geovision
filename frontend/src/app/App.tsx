@@ -1,10 +1,13 @@
 import { RouterProvider } from 'react-router';
 import { router } from './routes';
+import { LocationProvider } from '../context/LocationContext';
 
 export default function App() {
   return (
     <div className="dark">
-      <RouterProvider router={router} />
+      <LocationProvider>
+        <RouterProvider router={router} />
+      </LocationProvider>
     </div>
   );
 }

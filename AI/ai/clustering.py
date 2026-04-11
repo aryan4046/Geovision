@@ -19,8 +19,8 @@ from .utils import normalize
 
 def detect_hotspots(
     coordinates: list[dict],
-    eps_km: float = 1.5,
-    min_samples: int = 3,
+    eps_km: float = 15.0,
+    min_samples: int = 1,
 ) -> dict:
     """
     Identify geographic hotspots from a list of location data points.

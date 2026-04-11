@@ -24,12 +24,15 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
-const customMarkerIcon = new L.Icon({
-  iconUrl: "https://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=%E2%80%A2|7c3aed",
-  iconSize: [21, 34],
-  iconAnchor: [10, 34],
-  popupAnchor: [1, -34],
-  shadowUrl: markerShadow,
+const customMarkerIcon = L.divIcon({
+  className: "custom-div-icon bg-transparent border-none",
+  html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#7c3aed" width="36" height="36" stroke="white" stroke-width="2">
+           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+           <circle cx="12" cy="10" r="3" fill="white"></circle>
+         </svg>`,
+  iconSize: [36, 36],
+  iconAnchor: [18, 36],
+  popupAnchor: [0, -36]
 });
 
 const businessLabels: Record<string, string> = {
@@ -73,7 +76,8 @@ export function MapView({
   useEffect(() => {
     if (showHeatmap) {
       apiService.fetchHotspots().then(data => {
-        setHotspots(data.hotspots || []);
+        // detect_hotspots returns { hotspots: [...], total_clusters, noise_points }
+        setHotspots(data.hotspots || data.clusters || []);
       }).catch(console.error);
     } else {
       setHotspots([]);
@@ -83,20 +87,25 @@ export function MapView({
   const defaultCenter: [number, number] = [20.5937, 78.9629]; // India base
 
   return (
-    <div className="flex-1 relative overflow-hidden bg-gray-900">
+    <div className="flex-1 relative overflow-hidden bg-slate-100">
       
       {/* Map Container */}
       <div className="absolute inset-0 z-0">
         <MapContainer
           center={selectedLocation ? [selectedLocation.lat, selectedLocation.lng] : defaultCenter}
           zoom={5}
-          style={{ height: "100%", width: "100%", background: "#08101e" }}
+          minZoom={4}
+          maxBounds={[
+            [6.0, 68.0],  // Southwest India
+            [37.5, 97.5]  // Northeast India
+          ]}
+          maxBoundsViscosity={1.0}
+          style={{ height: "100%", width: "100%", background: "#e8edf2" }}
           zoomControl={false}
         >
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/">OSM</a>'
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            className="filter invert hue-rotate-180 brightness-75 contrast-125"
           />
           <MapEvents onMapClick={onMapClick} />
           
@@ -108,10 +117,10 @@ export function MapView({
              <Circle 
                 key={i} 
                 center={[spot.lat, spot.lng]} 
-                radius={spot.radius || 500} 
+                radius={Math.max(3000, (spot.intensity || 0.5) * 15000)} 
                 pathOptions={{
-                  color: spot.intensity > 80 ? 'red' : spot.intensity > 50 ? 'yellow' : 'green',
-                  fillOpacity: 0.5,
+                  color: (spot.intensity || 0) > 0.7 ? 'red' : (spot.intensity || 0) > 0.4 ? 'orange' : 'green',
+                  fillOpacity: 0.3,
                   stroke: false
                 }}
              />
@@ -205,7 +214,7 @@ export function MapView({
             className="flex items-center gap-2 px-4 py-3 rounded-xl transition-all shadow-2xl overflow-hidden relative group border border-purple-500/30"
             style={{ background: "rgba(8,12,24,0.85)", backdropFilter: "blur(16px)" }}
             onClick={() => {
-              // Usually handled by another component or event
+              window.location.href = '/recommendations';
             }}
           >
             <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />

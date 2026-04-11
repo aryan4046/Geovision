@@ -26,7 +26,7 @@ export function AIChatbot({ isOpen, onToggle, selectedLocation, businessType = "
     {
       id: "1",
       role: "assistant",
-      content: "👋 Hi! I'm your **GeoVision AI** assistant powered by advanced geospatial analytics.\n\nI can help you:\n• Find optimal locations for your business in Mumbai\n• Analyze site readiness and demographics\n• Compare different areas\n• Provide market insights and recommendations\n\nWhat would you like to know?",
+      content: "👋 Hi! I'm your **GeoVision AI** assistant powered by advanced geospatial analytics.\n\nI can help you:\n• Find optimal locations for your business across India\n• Analyze site readiness and demographics\n• Compare different areas\n• Provide market insights and recommendations\n\nWhat would you like to know?",
       timestamp: new Date(),
     },
   ]);
@@ -117,17 +117,22 @@ export function AIChatbot({ isOpen, onToggle, selectedLocation, businessType = "
 
   if (!isOpen) {
     return (
-      <Button
+      <button
         onClick={onToggle}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-2xl z-50 hover:scale-110 transition-transform"
+        className="fixed bottom-8 right-8 w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 via-purple-600 to-fuchsia-600 text-white shadow-[0_0_30px_rgba(168,85,247,0.6)] z-50 hover:scale-110 transition-transform border border-white/20 flex items-center justify-center group overflow-hidden"
       >
-        <MessageCircle className="w-6 h-6" />
-      </Button>
+        <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <Bot className="w-8 h-8 relative z-10 drop-shadow-md" />
+        <div className="absolute -top-1 -right-1 flex h-4 w-4">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-4 w-4 bg-pink-500 border border-white/50"></span>
+        </div>
+      </button>
     );
   }
 
   return (
-    <div className="fixed bottom-6 right-6 w-[440px] h-[calc(100vh-140px)] max-h-[450px] backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl shadow-2xl flex flex-col z-50 animate-in slide-in-from-bottom-4">
+    <div className="fixed bottom-6 right-6 w-[440px] h-[calc(100vh-140px)] max-h-[450px] bg-[#0f172a] border border-white/20 rounded-2xl shadow-2xl flex flex-col z-50 animate-in slide-in-from-bottom-4 overflow-hidden">
       {/* Header */}
       <div className="p-4 border-b border-white/10 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
@@ -246,7 +251,7 @@ export function AIChatbot({ isOpen, onToggle, selectedLocation, businessType = "
           </Button>
         </div>
         <p className="text-xs text-gray-500 mt-2 text-center">
-          AI-powered location recommendations for Mumbai
+          AI-powered location recommendations across India
         </p>
       </div>
     </div>

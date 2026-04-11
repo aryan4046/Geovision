@@ -94,10 +94,10 @@ export function InsightsPanel({ location, competitorImpact }: InsightsPanelProps
           <div className="space-y-4">
             <div>
               <div className="flex justify-between mb-2">
-                <span className="text-sm text-gray-300">Population</span>
-                <span className="text-sm font-medium text-white">{location.population}%</span>
+                <span className="text-sm text-gray-300">Population Density</span>
+                <span className="text-sm font-medium text-white">{(location as any).rawMetrics?.population ? Math.round((location as any).rawMetrics.population).toLocaleString() + ' / sqkm' : `${location.population}%`}</span>
               </div>
-              <Progress value={location.population} className="h-2" />
+              <Progress value={location.population > 100 ? 100 : location.population} className="h-2" />
             </div>
             <div>
               <div className="flex justify-between mb-2">
@@ -106,16 +106,45 @@ export function InsightsPanel({ location, competitorImpact }: InsightsPanelProps
               </div>
               <Progress value={location.accessibility} className="h-2" />
             </div>
+            {/* Added real India census stats context if available */}
+            {(location as any).rawMetrics?.state_census?.total_population > 0 && (
+              <div className="mt-4 pt-3 border-t border-white/10">
+                <span className="text-xs text-purple-400 font-semibold mb-2 block uppercase tracking-wide">
+                  State Census ({(location as any).rawMetrics.state_census.state})
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-white/5 p-2 rounded-lg">
+                     <p className="text-[10px] text-gray-400 uppercase">Population</p>
+                     <p className="text-xs font-bold text-white">{(location as any).rawMetrics.state_census.total_population.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white/5 p-2 rounded-lg">
+                     <p className="text-[10px] text-gray-400 uppercase">Urban</p>
+                     <p className="text-xs font-bold text-white">{(location as any).rawMetrics.state_census.urban_population.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white/5 p-2 rounded-lg">
+                     <p className="text-[10px] text-gray-400 uppercase">Density</p>
+                     <p className="text-xs font-bold text-white">{(location as any).rawMetrics.state_census.density_sqkm.toLocaleString()} / km²</p>
+                  </div>
+                  <div className="bg-white/5 p-2 rounded-lg">
+                     <p className="text-[10px] text-gray-400 uppercase">Sex Ratio</p>
+                     <p className="text-xs font-bold text-white">{(location as any).rawMetrics.state_census.sex_ratio}</p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div>
               <div className="flex justify-between mb-2">
-                <span className="text-sm text-gray-300">Competition</span>
+                <span className="text-sm text-gray-300">
+                  Low Competition
+                  <span className="text-xs text-gray-500 ml-1">(higher = fewer rivals)</span>
+                </span>
                 <span className="text-sm font-medium text-white">{location.competition}%</span>
               </div>
               <Progress value={location.competition} className="h-2" />
             </div>
             <div>
               <div className="flex justify-between mb-2">
-                <span className="text-sm text-gray-300">Points of Interest</span>
+                <span className="text-sm text-gray-300">Footfall Potential</span>
                 <span className="text-sm font-medium text-white">{location.pois}%</span>
               </div>
               <Progress value={location.pois} className="h-2" />
@@ -199,6 +228,19 @@ export function InsightsPanel({ location, competitorImpact }: InsightsPanelProps
                   }`}>
                     {competitorImpact.riskLevel}
                   </span>
+                </div>
+              )}
+              {/* Added Real Competitor Names Display */}
+              {(location as any).rawMetrics?.competitor_names?.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-white/10">
+                  <span className="text-xs text-gray-400 mb-1 block">Known Competitors:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {(location as any).rawMetrics.competitor_names.map((name: string, i: number) => (
+                      <span key={i} className="text-xs px-2 py-0.5 rounded-md bg-white/10 text-gray-300">
+                        {name}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
