@@ -1,0 +1,141 @@
+GeoVision AI - System Guideline File
+
+PROJECT OVERVIEW
+GeoVision AI is an AI-powered geospatial platform that analyzes locations and provides intelligent business insights.
+
+CORE FEATURES (DO NOT CHANGE NAMES)
+1. Site Readiness Score
+2. Recommendation Engine
+3. Hotspot Detection
+4. AI Explanation Engine
+5. AI Business Advisor (Chatbot)
+6. Personalized Scoring Engine
+7. Competitor Impact Analyzer
+8. Location Comparison
+9. Report Generation
+10. Business Type Selector
+
+-------------------------------------
+
+API ENDPOINTS (FIXED)
+
+1. POST /get-score
+Input:
+{
+  "lat": float,
+  "lng": float,
+  "business_type": "string",
+  "weights": {
+    "population": float,
+    "competition": float,
+    "accessibility": float
+  }
+}
+Output:
+{
+  "score": int,
+  "factors": {}
+}
+
+2. POST /get-recommendations
+Output:
+{
+  "locations": []
+}
+
+3. GET /get-hotspots
+Output:
+{
+  "hotspots": []
+}
+
+4. POST /get-explanation
+Input:
+{
+  "score": int,
+  "factors": {}
+}
+Output:
+{
+  "explanation": "string"
+}
+
+5. POST /chat
+Input:
+{
+  "query": "string"
+}
+Output:
+{
+  "response": "string"
+}
+
+6. POST /competitor-impact
+Input:
+{
+  "lat": float,
+  "lng": float
+}
+Output:
+{
+  "impact": "string",
+  "score_change": int
+}
+
+7. POST /compare
+Input:
+{
+  "locations": []
+}
+Output:
+{
+  "comparison": []
+}
+
+-------------------------------------
+
+WORKFLOW
+
+User selects business type → adjusts scoring weights → clicks location → frontend calls APIs → backend processes data → AI generates score & explanation → response sent → UI updates.
+
+-------------------------------------
+
+FRONTEND WORK (React)
+
+- Map UI (Leaflet)
+- API integration
+- Display score, insights, recommendations
+- Chatbot UI
+- Comparison UI
+- Heatmap visualization
+
+-------------------------------------
+
+BACKEND WORK (FastAPI)
+
+- Implement all endpoints
+- Data processing
+- Connect AI logic
+- Return JSON responses
+
+-------------------------------------
+
+AI WORK
+
+- Scoring logic (weights-based)
+- DBSCAN clustering (hotspots)
+- Claude/OpenAI prompts:
+  - Explanation
+  - Chatbot
+
+-------------------------------------
+
+RULES
+
+- Do NOT change API names
+- Do NOT change feature names
+- Follow exact JSON formats
+
+-------------------------------------
+
+END OF FILE
