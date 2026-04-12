@@ -116,7 +116,7 @@ def chat_response(
         if client:
             full_messages = [{"role": "system", "content": SYSTEM_PROMPT}] + messages
             resp = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="llama-3.1-8b-instant",
                 max_tokens=600,
                 messages=full_messages,
             )

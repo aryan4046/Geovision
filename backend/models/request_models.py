@@ -11,6 +11,7 @@ class LocationRequest(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     context: Optional[Any] = None
+    history: Optional[List[Dict[str, str]]] = None
 
 class ExplanationRequest(BaseModel):
     lat: float

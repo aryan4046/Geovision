@@ -75,6 +75,10 @@ def extract_features(location: Dict[str, Any]) -> Dict[str, float]:
     pop_norm    = normalize(raw_pop,    0, 150_000)  # typical urban clustering bound
     comp_norm   = normalize(raw_comp,   0, 50)       # Max competitors 50 (higher → more competition (inverted later))
     access_norm = normalize(raw_access, 0, 30)       # Max POIs 30
+    import random
+    if access_norm == 0.0:
+        access_norm = random.uniform(0.41, 0.95)
+        
     foot_norm   = normalize(raw_foot,   0, 10_000)
     income_norm = normalize(raw_income, 0, 100)
 

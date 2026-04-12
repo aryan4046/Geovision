@@ -37,6 +37,12 @@ def _build_explanation_prompt(score: int, factors: dict, business_type: str = "b
         f"  - {k.replace('_', ' ').title()}: {round(v * 100, 1)}%"
         for k, v in factors.items()
     )
+    
+    weakness_rule = (
+        "- You MUST provide legitimate weaknesses as the score is below 75." if score < 75 else
+        "- The score is 75 or higher. Only list a weakness if genuinely supported by the data (e.g. clearly low percentage). Otherwise, return an empty array [] for weaknesses."
+    )
+
     return f"""
 You are GeoVision AI, an expert geospatial business intelligence assistant.
 
@@ -48,15 +54,16 @@ Factor breakdown (normalised 0-1 → shown as %):
 Please provide a structured analysis in STRICT JSON with this exact schema:
 {{
   "explanation": "<2-3 sentence summary of why this location received this score>",
-  "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
-  "weaknesses": ["<weakness 1>", "<weakness 2>"],
-  "opportunities": ["<opportunity 1>", "<opportunity 2>"],
+  "strengths": ["<strength 1>", "<strength 2>"],
+  "weaknesses": ["<weakness 1>"],
+  "opportunities": ["<opportunity 1>"],
   "risk_level": "<Low | Medium | High>"
 }}
 
 Rules:
-- Be specific and data-driven.
-- strengths, weaknesses, opportunities must be non-empty arrays.
+- Be specific and data-driven focusing squarely on advantages and true data.
+- {weakness_rule}
+- Strengths and opportunities MUST reflect the real data advantages shown in the Factor breakdown.
 - Return ONLY valid JSON, no markdown fences.
 """.strip()
 
@@ -97,7 +104,7 @@ def generate_explanation(
     try:
         if client:
             response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="llama-3.1-8b-instant",
                 max_tokens=800,
                 temperature=0.7,
                 messages=[
@@ -132,7 +139,7 @@ def generate_explanation(
         return {
             "explanation":   raw_text[:500],
             "strengths":     _derive_strengths(factors),
-            "weaknesses":    _derive_weaknesses(factors),
+            "weaknesses":    _derive_weaknesses(factors, score),
             "opportunities": ["Explore infrastructure investment", "Target underserved demographics"],
             "risk_level":    _derive_risk(score),
         }
@@ -165,7 +172,7 @@ def _derive_strengths(factors: dict) -> list[str]:
     return strengths or ["Moderate market conditions present baseline opportunities"]
 
 
-def _derive_weaknesses(factors: dict) -> list[str]:
+def _derive_weaknesses(factors: dict, score: int = 50) -> list[str]:
     weaknesses = []
     if factors.get("population", 1) < 0.4:
         weaknesses.append("Sparse population limits addressable market size")
@@ -175,7 +182,10 @@ def _derive_weaknesses(factors: dict) -> list[str]:
         weaknesses.append("High competitor density could suppress market share")
     if factors.get("footfall", 1) < 0.4:
         weaknesses.append("Low footfall reduces spontaneous discovery potential")
-    return weaknesses or ["Limited data available for complete risk assessment"]
+        
+    if not weaknesses and score < 75:
+        return ["Limited data available for complete risk assessment"]
+    return weaknesses
 
 
 def _fallback_explanation(
@@ -191,7 +201,7 @@ def _fallback_explanation(
             f"competitive landscape, and accessibility metrics."
         ),
         "strengths":     _derive_strengths(factors),
-        "weaknesses":    _derive_weaknesses(factors),
+        "weaknesses":    _derive_weaknesses(factors, score),
         "opportunities": [
             "Leverage local demographics for targeted marketing",
             "Consider partnerships to offset competitive pressure",
