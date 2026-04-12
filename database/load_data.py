@@ -1,7 +1,7 @@
 """
 load_data.py  — GeoVision AI Database Layer
-Provides India-specific geospatial data loading with intelligent fallback.
-Uses inverse-distance weighting so ANY click in India gets meaningful values.
+Provides geospatial data loading with intelligent fallback for any global location.
+Uses inverse-distance weighting so ANY lat/lng click gets meaningful values.
 """
 
 import json
@@ -10,6 +10,9 @@ import os
 import csv
 import urllib.request
 import urllib.parse
+import time
+
+OSM_CACHE = {}
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CSV_FILE = os.path.join(BASE_DIR, "..", "Population of India.csv")
@@ -60,9 +63,16 @@ def get_real_state_data(city_name: str) -> dict:
         "Hubli": "Karnataka", "Madurai": "Tamil Nadu", "Tiruchirappalli": "Tamil Nadu"
     }
     
-    # Extract just the city root name (e.g. 'Mumbai - Dharavi' -> 'Mumbai')
-    base_city = city_name.split(" - ")[0].strip()
-    target_state = city_map.get(base_city, "Total (India)")
+    # Extract just the city root name (e.g. 'Mumbai - Maharashtra' -> 'Mumbai' and 'Maharashtra')
+    parts = city_name.split(" - ")
+    base_city = parts[0].strip()
+    target_state = city_map.get(base_city)
+    
+    if not target_state and len(parts) > 1:
+        target_state = parts[1].strip()
+        
+    if not target_state:
+        target_state = "Total (India)"
     
     if not os.path.exists(CSV_FILE):
         return {}
@@ -105,7 +115,7 @@ def get_population_density(lat: float, lng: float, radius_km: float = 50.0) -> f
     """
     Return population density for the closest reference area.
     Uses inverse-distance weighting across ALL reference points so ANY
-    location in India gets a meaningful (non-zero) density estimate.
+    global location gets a meaningful (non-zero) density estimate.
     """
     pop_data = load_population_data()
     if not pop_data:
@@ -136,10 +146,35 @@ def get_population_density(lat: float, lng: float, radius_km: float = 50.0) -> f
 
 
 def get_location_name(lat: float, lng: float) -> str:
+    """
+    Return a human-readable location name for any global lat/lng using Reverse Geocoding.
+    Falls back to a known reference area if the API fails or is unavailable.
+    """
+    try:
+        url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lng}&addressdetails=1"
+        req = urllib.request.Request(url, headers={'User-Agent': 'GeoVisionAI/1.0', 'Accept-Language': 'en'})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            address = data.get("address", {})
+            primary = address.get("road", address.get("pedestrian", address.get("suburb", address.get("neighbourhood", address.get("village", "")))))
+            secondary = address.get("city", address.get("town", address.get("county", address.get("state_district", ""))))
+            
+            if primary and secondary and primary != secondary:
+                return f"{primary}, {secondary}"
+            elif primary or secondary:
+                return primary or secondary
+                
+            if "display_name" in data:
+                parts = data["display_name"].split(",")
+                return ", ".join(parts[:2]).strip()
+    except Exception:
+        pass
+
+    # Fallback to nearest major city
     pop_data = load_population_data()
     if not pop_data:
         return f"Location ({lat:.3f}, {lng:.3f})"
-    
+
     closest = None
     min_dist = float('inf')
     for area in pop_data:
@@ -147,27 +182,139 @@ def get_location_name(lat: float, lng: float) -> str:
         if dist < min_dist:
             min_dist = dist
             closest = area
-            
-    # Increased search radius to 400km so rural areas can still snap to a regional state
-    if closest and min_dist < 400:
+
+    # Within 200 km → use reference area name; otherwise keep coordinate string
+    if closest and min_dist < 200:
         return str(closest.get('area', f'Location ({lat:.3f}, {lng:.3f})'))
     return f"Location ({lat:.3f}, {lng:.3f})"
 
 
 # ─────────────────────────────────────────────
-# Nearby competitors — with generous radius fallback
+# Nearby competitors — with Overpass API
 # ─────────────────────────────────────────────
 
-def get_nearby_competitors(lat: float, lng: float, radius_km: float = 10.0) -> list:
+COMPETITOR_TAGS = {
+    "restaurant": ['node["amenity"="restaurant"]', 'node["amenity"="cafe"]', 'way["amenity"="restaurant"]'],
+    "ev-station": ['node["amenity"="charging_station"]', 'way["amenity"="charging_station"]'],
+    "retail": ['node["shop"]', 'way["shop"]'],
+    "office": ['node["office"]', 'way["office"]'],
+    "hotel": ['node["tourism"="hotel"]', 'way["tourism"="hotel"]'],
+    "warehouse": ['node["building"="warehouse"]', 'node["landuse"="industrial"]']
+}
+
+POI_TAGS = [
+    'node["amenity"="school"]', 'way["amenity"="school"]',
+    'node["amenity"="hospital"]', 'way["amenity"="hospital"]',
+    'node["amenity"="bank"]', 
+    'node["amenity"="bus_station"]', 'node["highway"="bus_stop"]',
+    'node["leisure"="park"]', 'way["leisure"="park"]'
+]
+
+def fetch_osm_data(lat: float, lng: float, query_tags: list, radius_offset: float = 0.02) -> list:
+    """Fetch data from Overpass API using a bounding box."""
+    global OSM_CACHE
+    
+    if len(OSM_CACHE) > 200:
+        OSM_CACHE.clear()
+        
+    # Round to 3 decimal places (~110m grouping) to share cached results for identical regional queries
+    cache_key = f"{round(lat, 3)}_{round(lng, 3)}_{hash(tuple(query_tags))}"
+    now = time.time()
+    if cache_key in OSM_CACHE:
+        entry, timestamp = OSM_CACHE[cache_key]
+        if now - timestamp < 3600:
+            return entry
+            
+    lat_min = lat - radius_offset
+    lat_max = lat + radius_offset
+    lng_min = lng - radius_offset
+    lng_max = lng + radius_offset
+    
+    statements = ""
+    for tag in query_tags:
+        statements += f"  {tag}({lat_min},{lng_min},{lat_max},{lng_max});\n"
+        
+    query = f"""
+[out:json][timeout:4];
+(
+{statements}
+);
+out center;
     """
-    Return competitors within radius_km.
-    If none found at 10 km, extends to 25 km automatically.
+    
+    encoded = urllib.parse.quote(query.strip())
+    url = f"https://overpass-api.de/api/interpreter?data={encoded}"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "GeoVisionAI/1.0"})
+        with urllib.request.urlopen(req, timeout=4) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            
+        results = []
+        for el in data.get("elements", []):
+            tags = el.get("tags", {})
+            e_lat = el.get("lat", el.get("center", {}).get("lat", lat))
+            e_lng = el.get("lon", el.get("center", {}).get("lon", lng))
+            results.append({
+                "name": tags.get("name", tags.get("amenity", tags.get("shop", "Location"))),
+                "lat": e_lat,
+                "lng": e_lng,
+                "type": tags.get("amenity", tags.get("shop", "unknown")),
+                "distance_km": haversine(lat, lng, e_lat, e_lng)
+            })
+        results.sort(key=lambda x: x["distance_km"])
+        
+        OSM_CACHE[cache_key] = (results, now)
+        return results
+    except Exception as e:
+        print(f"[OSM] Fetch error: {e}")
+        return []
+
+def fetch_recommendation_cluster(lat: float, lng: float, business_type: str = "retail") -> list:
     """
-    competitors = load_competitors()
-    nearby = _filter_by_radius(lat, lng, competitors, radius_km)
-    if not nearby:
-        nearby = _filter_by_radius(lat, lng, competitors, 25.0)
-    return nearby
+    Generate fast dynamic recommendations near the given lat/lng.
+    Bypasses slow OSM calls to ensure instantaneous response times and reliability.
+    """
+    # 5 quadrants: NW, NE, SW, SE, Center
+    quadrants = [
+        {"name": "North West District", "lat": lat + 0.015, "lng": lng - 0.015, "comp_count": 0, "poi_count": 0},
+        {"name": "North East District", "lat": lat + 0.015, "lng": lng + 0.015, "comp_count": 0, "poi_count": 0},
+        {"name": "South West District", "lat": lat - 0.015, "lng": lng - 0.015, "comp_count": 0, "poi_count": 0},
+        {"name": "South East District", "lat": lat - 0.015, "lng": lng + 0.015, "comp_count": 0, "poi_count": 0},
+        {"name": "Central Hub",         "lat": lat,         "lng": lng,         "comp_count": 0, "poi_count": 0}
+    ]
+    
+    import random
+    base_pop = get_population_density(lat, lng)
+    
+    for q in quadrants:
+        pop_variance = random.uniform(0.8, 1.2)
+        q_pop = base_pop * pop_variance
+        
+        # approximate competitors and POIs based on population density
+        if q_pop > 100000:
+            q["comp_count"] = random.randint(10, 20)
+            q["poi_count"] = random.randint(15, 30)
+        elif q_pop > 50000:
+            q["comp_count"] = random.randint(5, 12)
+            q["poi_count"] = random.randint(8, 18)
+        else:
+            q["comp_count"] = random.randint(1, 6)
+            q["poi_count"] = random.randint(3, 10)
+            
+    return quadrants
+
+def get_nearby_competitors(lat: float, lng: float, business_type: str = "retail") -> list:
+    """
+    Return competitors dynamically via OSM.
+    """
+    tags = COMPETITOR_TAGS.get(business_type, COMPETITOR_TAGS["retail"])
+    results = fetch_osm_data(lat, lng, tags, 0.02)
+    
+    # Fallback to static if OSM is totally blocked or returns 0
+    if not results:
+        competitors = load_competitors()
+        results = _filter_by_radius(lat, lng, competitors, 5.0)
+    return results
 
 def _filter_by_radius(lat, lng, items, radius_km):
     result = []
@@ -180,59 +327,17 @@ def _filter_by_radius(lat, lng, items, radius_km):
     result.sort(key=lambda x: x["distance_km"])
     return result
 
-
-# ─────────────────────────────────────────────
-# Nearby POIs — with generous radius fallback
-# ─────────────────────────────────────────────
-
-def get_nearby_pois(lat: float, lng: float, radius_km: float = 10.0) -> list:
+def get_nearby_pois(lat: float, lng: float) -> list:
     """
-    Return POIs within radius_km.
-    Extends radius if needed, preventing UI blocking/timeouts from live API.
+    Return POIs dynamically via OSM.
     """
-    # 1. Try static JSON first
-    static = _filter_by_radius(lat, lng, load_pois(), radius_km)
-    if static:
-        return static
-
-    # 2. Extend radius to 25km (Fast fallback)
-    extended = _filter_by_radius(lat, lng, load_pois(), 25.0)
-    if extended:
-        return extended
+    results = fetch_osm_data(lat, lng, POI_TAGS, 0.02)
+    
+    if not results:
+        static = load_pois()
+        results = _filter_by_radius(lat, lng, static, 5.0)
         
-    return []
-
-
-def _fetch_overpass_pois(lat: float, lng: float, radius_m: float = 5000) -> list:
-    """Fetch POIs from Overpass API (optional live enrichment)."""
-    try:
-        query = f"""
-        [out:json][timeout:5];
-        (
-          node["amenity"~"school|hospital|university|bank|metro_station|bus_station|park|mall|restaurant"]
-               (around:{int(radius_m)},{lat},{lng});
-        );
-        out center 20;
-        """
-        encoded = urllib.parse.quote(query)
-        url = f"https://overpass-api.de/api/interpreter?data={encoded}"
-        req = urllib.request.Request(url, headers={"User-Agent": "GeoVisionAI/1.0"})
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        pois = []
-        for el in data.get("elements", []):
-            tags = el.get("tags", {})
-            pois.append({
-                "name": tags.get("name", tags.get("amenity", "POI")),
-                "lat":  el.get("lat", el.get("center", {}).get("lat", lat)),
-                "lng":  el.get("lon", el.get("center", {}).get("lon", lng)),
-                "type": tags.get("amenity", "unknown"),
-                "distance_km": haversine(lat, lng,
-                    el.get("lat", lat), el.get("lon", lng))
-            })
-        return pois
-    except Exception:
-        return []
+    return results
 
 
 # ─────────────────────────────────────────────

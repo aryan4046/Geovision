@@ -7,4 +7,6 @@ export const API_ENDPOINTS = {
   COMPETITOR_IMPACT:"/competitor-impact",
   COMPARE:          "/compare",
   GENERATE_REPORT:  "/generate-report",
+  GEOCODER_SEARCH:  "/geocoder/search",
+  GEOCODER_REVERSE: "/geocoder/reverse",
 };

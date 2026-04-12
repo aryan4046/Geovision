@@ -11,21 +11,14 @@ def get_population_density(lat: float, lng: float) -> float:
         print(f"[data_service] population error: {e}")
         return 50_000
 
-def get_nearby_competitors(lat: float, lng: float) -> list:
+def get_nearby_competitors(lat: float, lng: float, business_type: str = "retail") -> list:
     try:
         from database.load_data import get_nearby_competitors as db_comp
         import random
-        comps = db_comp(lat, lng)
+        comps = db_comp(lat, lng, business_type)
         if not comps:
-            # Generate 2-4 realistic random dummy competitors for remote areas
-            count = random.randint(2, 4)
-            for i in range(count):
-                comps.append({
-                    "name": random.choice(["Global Store", "Local Mart", "Express Outlet", "Prime Services", "Urban Hub", "Retail Extra"]),
-                    "lat": lat + random.uniform(-0.02, 0.02),
-                    "lng": lng + random.uniform(-0.02, 0.02),
-                    "type": "General"
-                })
+            # Generate dummy competitors via fallback is already handled in load_data, but just in case
+            pass
         return comps
     except Exception as e:
         print(f"[data_service] competitors error: {e}")
@@ -34,13 +27,7 @@ def get_nearby_competitors(lat: float, lng: float) -> list:
 def get_nearby_pois(lat: float, lng: float) -> list:
     try:
         from database.load_data import get_nearby_pois as db_pois
-        import random
         pois = db_pois(lat, lng)
-        if not pois:
-            # Generate 3-7 dummy POIs for footfall context
-            count = random.randint(3, 7)
-            for i in range(count):
-                pois.append({"type": "Transit", "lat": lat, "lng": lng})
         return pois
     except Exception as e:
         print(f"[data_service] pois error: {e}")

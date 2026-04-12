@@ -4,20 +4,29 @@ import { ArrowLeft, MapPin, TrendingUp, Sparkles, ExternalLink } from "lucide-re
 import { Button } from "../ui/button";
 import { useNavigate } from "react-router";
 import { apiService } from "../../../services/apiService";
+import { useLocationContext } from "../../../context/LocationContext";
 
 export function Recommendations() {
   const navigate = useNavigate();
+  const { selectedLocation, businessType } = useLocationContext();
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiService.fetchRecommendations()
+    if (!selectedLocation) {
+       setLoading(false);
+       return;
+    }
+    
+    setLoading(true);
+    // Properly fetch by passing lat and lng from context to prevent backend 400 validation error
+    apiService.fetchRecommendations(selectedLocation.lat, selectedLocation.lng, businessType)
       .then(data => {
         setRecommendations(data.locations || data.recommendations || []);
       })
       .catch(err => console.error("Error fetching recommendations: ", err))
       .finally(() => setLoading(false));
-  }, []);
+  }, [selectedLocation, businessType]);
 
   const getScoreColor = (score: number) => {
     if (score >= 85) return "from-green-500 to-green-600";
@@ -54,6 +63,17 @@ export function Recommendations() {
               <div className="flex flex-col items-center justify-center py-20 space-y-4">
                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
                  <p className="text-gray-400">Loading AI Recommendations...</p>
+              </div>
+            ) : !selectedLocation ? (
+              <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                 <div className="w-16 h-16 rounded-full bg-purple-500/20 flex items-center justify-center mb-4">
+                   <MapPin className="w-8 h-8 text-purple-400" />
+                 </div>
+                 <h2 className="text-xl font-bold text-white">No Location Selected</h2>
+                 <p className="text-gray-400 mb-6 text-center max-w-md">Please navigate back to the dashboard map and select or search for a location to analyze.</p>
+                 <Button onClick={() => navigate("/dashboard")} className="bg-gradient-to-r from-purple-600 to-blue-600">
+                    Go to Map
+                 </Button>
               </div>
             ) : recommendations.length === 0 ? (
               <p className="text-gray-400 text-center py-10">No recommendations found.</p>
@@ -145,7 +165,23 @@ export function Recommendations() {
                     {/* Actions */}
                     <div className="flex gap-3">
                       <Button
-                        onClick={() => navigate("/dashboard")}
+                        onClick={() => {
+                          setSelectedLocation({
+                            lat: location.lat,
+                            lng: location.lng,
+                            name: location.name,
+                            score: location.score,
+                            population: location.factors?.population || 0,
+                            accessibility: location.factors?.accessibility || 0,
+                            competition: location.factors?.competition || 0,
+                            pois: location.factors?.pois || 0,
+                            strengths: [],
+                            weaknesses: [],
+                            opportunities: [],
+                            rawMetrics: {}
+                          });
+                          navigate("/dashboard");
+                        }}
                         className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
                       >
                         <MapPin className="w-4 h-4 mr-2" />

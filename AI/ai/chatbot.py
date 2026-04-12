@@ -14,6 +14,12 @@ from typing import Any
 # ---------------------------------------------------------------------------
 
 def _get_llm_client():
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+        
     groq_key = os.getenv("GROQ_API_KEY")
     if groq_key:
         try:

@@ -8,7 +8,7 @@ load_dotenv(dotenv_path=env_path)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routes import score, recommendation, hotspots, explanation, chatbot, competitor, compare, report
+from routes import score, recommendation, hotspots, explanation, chatbot, competitor, compare, report, geocoder
 
 app = FastAPI(title="GeoVision AI Backend")
 
@@ -30,6 +30,7 @@ app.include_router(chatbot.router, tags=["Chatbot"])
 app.include_router(competitor.router, tags=["Competitor Impact"])
 app.include_router(compare.router, tags=["Compare"])
 app.include_router(report.router, tags=["Report"])
+app.include_router(geocoder.router, tags=["Geocoder"])
 
 @app.get("/")
 def read_root():

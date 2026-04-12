@@ -6,6 +6,7 @@ class LocationRequest(BaseModel):
     lng: float
     business_type: str
     weights: Dict[str, float]
+    location_name: Optional[str] = None
 
 class ChatRequest(BaseModel):
     message: str
@@ -23,7 +24,10 @@ class CompetitorRequest(BaseModel):
 class LocationData(BaseModel):
     lat: float
     lng: float
+    name: Optional[str] = None
 
 class CompareRequest(BaseModel):
     location1: LocationData
     location2: LocationData
+    business_type: str = "retail"
+    weights: Dict[str, float] = {}

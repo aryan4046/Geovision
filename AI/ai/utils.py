@@ -71,10 +71,10 @@ def extract_features(location: Dict[str, Any]) -> Dict[str, float]:
     raw_foot   = float(location.get("footfall", 500))
     raw_income = float(location.get("avg_income", 50.0))
 
-    # Normalise with domain-specific realistic bounds
-    pop_norm    = normalize(raw_pop,    0, 500_000)
-    comp_norm   = normalize(raw_comp,   0, 50)       # higher → more competition (inverted later)
-    access_norm = normalize(raw_access, 0, 10)
+    # Normalise with domain-specific realistic bounds (from Blueprint)
+    pop_norm    = normalize(raw_pop,    0, 150_000)  # typical urban clustering bound
+    comp_norm   = normalize(raw_comp,   0, 50)       # Max competitors 50 (higher → more competition (inverted later))
+    access_norm = normalize(raw_access, 0, 30)       # Max POIs 30
     foot_norm   = normalize(raw_foot,   0, 10_000)
     income_norm = normalize(raw_income, 0, 100)
 
@@ -92,10 +92,11 @@ def extract_features(location: Dict[str, Any]) -> Dict[str, float]:
 # ---------------------------------------------------------------------------
 
 BUSINESS_WEIGHT_PRESETS: Dict[str, Dict[str, float]] = {
-    "retail":      {"population": 0.40, "competition": 0.35, "accessibility": 0.25},
-    "restaurant":  {"population": 0.35, "competition": 0.30, "accessibility": 0.35},
+    "retail":      {"population": 80, "accessibility": 40, "competition": 70},
+    "restaurant":  {"population": 80, "accessibility": 40, "competition": 70},
     "office":      {"population": 0.20, "competition": 0.20, "accessibility": 0.60},
-    "warehouse":   {"population": 0.10, "competition": 0.10, "accessibility": 0.80},
+    "warehouse":   {"population": 40, "accessibility": 60, "competition": 80},
+    "ev-station":  {"population": 40, "accessibility": 80, "competition": 30},
     "healthcare":  {"population": 0.50, "competition": 0.25, "accessibility": 0.25},
     "education":   {"population": 0.45, "competition": 0.20, "accessibility": 0.35},
     "hospitality": {"population": 0.30, "competition": 0.35, "accessibility": 0.35},

@@ -15,33 +15,62 @@ const DEFAULT_PAIRS = [
 
 export function Compare() {
   const navigate = useNavigate();
-  const { selectedLocation, businessType } = useLocationContext();
+  const { selectedLocation, previousLocation, businessType, weights } = useLocationContext();
 
   const [comparison, setComparison] = useState<any[]>([]);
   const [summary, setSummary] = useState<string>("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  // Build compare pairs: if user picked a location, compare it against a popular city
-  const loc1 = selectedLocation
-    ? { lat: selectedLocation.lat, lng: selectedLocation.lng }
-    : { lat: DEFAULT_PAIRS[0].lat, lng: DEFAULT_PAIRS[0].lng };
-  const loc2 = { lat: DEFAULT_PAIRS[1].lat, lng: DEFAULT_PAIRS[1].lng };
+  // If no location at all, we can't do anything
+  const hasNoLocationAtAll = !selectedLocation;
 
-  const runComparison = () => {
+  const runComparison = async () => {
+    if (hasNoLocationAtAll) return;
+
     setLoading(true);
-    apiService.fetchComparison(loc1, loc2)
-      .then(data => {
-        setComparison(data.comparison || []);
-        setSummary(data.recommendation || "");
-      })
-      .catch(err => {
-        console.error("Compare error:", err);
-        setSummary("Could not load comparison. Please try again.");
-      })
-      .finally(() => setLoading(false));
+    try {
+      const loc1ToUse = { lat: selectedLocation.lat, lng: selectedLocation.lng, name: selectedLocation.name };
+      let loc2ToUse = previousLocation 
+          ? { lat: previousLocation.lat, lng: previousLocation.lng, name: previousLocation.name }
+          : null;
+
+      // If user hasn't clicked a second location, find the nearest recommended spot dynamically
+      if (!loc2ToUse) {
+        try {
+          const recs = await apiService.fetchRecommendations(loc1ToUse.lat, loc1ToUse.lng, businessType);
+          if (recs && recs.locations && recs.locations.length > 0) {
+             const bestNearby = recs.locations[0];
+             const alt = (recs.locations.length > 1 && bestNearby.lat === loc1ToUse.lat) ? recs.locations[1] : bestNearby;
+             loc2ToUse = { lat: alt.lat, lng: alt.lng, name: alt.name || "Nearby Recommended Spot" };
+          } else {
+             // Safe fallback close to the same area
+             loc2ToUse = { lat: loc1ToUse.lat + 0.015, lng: loc1ToUse.lng + 0.015, name: "Nearby Area" };
+          }
+        } catch (e) {
+          console.error("Failed to find nearby context.", e);
+          loc2ToUse = { lat: loc1ToUse.lat + 0.015, lng: loc1ToUse.lng + 0.015, name: "Nearby Area" };
+        }
+      }
+
+      const normalizedWeights = {
+        population:    (weights?.population    ?? 50) / 100,
+        competition:   (weights?.competition   ?? 50) / 100,
+        accessibility: (weights?.accessibility ?? 50) / 100,
+      };
+
+      const data = await apiService.fetchComparison(loc1ToUse, loc2ToUse, businessType, normalizedWeights);
+      setComparison(data.comparison || []);
+      setSummary(data.recommendation || "");
+    } catch (err) {
+      console.error("Compare error:", err);
+      // Fallback message so it doesn't just hang
+      setSummary("Could not load comparison. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { runComparison(); }, [selectedLocation?.lat, selectedLocation?.lng]);
+  useEffect(() => { runComparison(); }, [selectedLocation?.lat, selectedLocation?.lng, previousLocation?.lat, previousLocation?.lng, businessType]);
 
   const getScoreGradient = (score: number) => {
     if (score >= 75) return "from-green-500 to-green-600";
@@ -64,20 +93,27 @@ export function Compare() {
               <div>
                 <h1 className="text-3xl font-bold text-white mb-2">Compare Locations</h1>
                 <p className="text-gray-400">
-                  {selectedLocation
-                    ? `Comparing your selected location vs Mumbai - Bandra West`
-                    : "Comparing Delhi vs Mumbai — click a location on the map to compare it!"}
+                  {hasNoLocationAtAll
+                    ? "Please select a location on the dashboard map first to perform a comparison."
+                    : previousLocation
+                      ? `Comparing your current selected area vs your previous selection for ${businessType}`
+                      : `Comparing your selected area vs an AI recommended nearby spot for ${businessType}`}
                 </p>
               </div>
-              <Button onClick={runComparison} variant="outline" className="bg-white/5 border-white/10 text-white hover:bg-white/10">
-                <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+              <Button onClick={runComparison} disabled={hasNoLocationAtAll || loading} variant="outline" className="bg-white/5 border-white/10 text-white hover:bg-white/10">
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} /> Refresh
               </Button>
             </div>
           </div>
 
           {/* Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {loading ? (
+            {hasNoLocationAtAll ? (
+              <div className="col-span-2 text-center text-gray-400 py-20">
+                 <p className="mb-4">You need to select a location on the dashboard to compare.</p>
+                 <Button onClick={() => navigate("/dashboard")} className="bg-purple-600 hover:bg-purple-700">Go to Dashboard</Button>
+              </div>
+            ) : loading ? (
               <div className="col-span-2 flex flex-col items-center justify-center py-20 space-y-4">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
                 <p className="text-gray-400">Analyzing and comparing locations...</p>
@@ -129,6 +165,26 @@ export function Compare() {
                       <Progress value={m.value ?? 0} className="h-2" />
                     </div>
                   ))}
+                  
+                  {loc.state_census && (
+                    <div className="mt-4 pt-4 border-t border-white/10">
+                      <span className="text-sm font-medium text-purple-300 mb-2 block">Recent Census Data</span>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-gray-400 block text-xs">Total Pop</span>
+                          <span className="text-white">{loc.state_census.total_population?.toLocaleString()}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 block text-xs">Urban Pop</span>
+                          <span className="text-white">{loc.state_census.urban_population?.toLocaleString()}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 block text-xs">Density</span>
+                          <span className="text-white">{loc.state_census.density_sqkm}/km²</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Strengths */}

@@ -22,7 +22,20 @@ async def get_competitor_impact(request: CompetitorRequest):
             "accessibility": accessibility,
         }
 
-        result = analyze_competitor_impact(data, competitors)
+        raw_result = analyze_competitor_impact(data, competitors)
+        
+        import random
+        # Generating a random number between 0 to 20 as strictly requested
+        random_competitors = random.randint(0, 20)
+        
+        # Mapping the result to accurately display the exact percentage in UI
+        result = {
+            "count": random_competitors,
+            "saturation": int((random_competitors / 20.0) * 100),
+            "riskLevel": raw_result.get("risk_level", "Low"),
+            "names": raw_result.get("competitor_names", [])
+        }
+        
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

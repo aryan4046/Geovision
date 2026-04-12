@@ -25,17 +25,22 @@ export function Dashboard() {
   const { selectedLocation, loading, analyzeLocation, competitorImpact } = useLocationAnalysis();
   const { setSelectedLocation: setCtxLocation, setBusinessType: setCtxBusinessType, setWeights: setCtxWeights } = useLocationContext();
 
+  const BUSINESS_WEIGHT_PRESETS: Record<string, Weights> = {
+    "retail":      { population: 80, accessibility: 40, competition: 70 },
+    "restaurant":  { population: 80, accessibility: 40, competition: 70 },
+    "office":      { population: 20, accessibility: 60, competition: 20 },
+    "warehouse":   { population: 40, accessibility: 60, competition: 80 },
+    "ev-station":  { population: 40, accessibility: 80, competition: 30 },
+    "hotel":       { population: 30, accessibility: 35, competition: 35 },
+  };
+
   const [businessType, setBusinessType] = useState<string>("restaurant");
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showChatbot, setShowChatbot] = useState(false);
-  const [weights, setWeights] = useState<Weights>({
-    population: 50,
-    accessibility: 50,
-    competition: 50,
-  });
+  const [weights, setWeights] = useState<Weights>(BUSINESS_WEIGHT_PRESETS["restaurant"]);
 
-  const handleMapClick = (lat: number, lng: number) => {
-    analyzeLocation(lat, lng, weights, businessType).then((loc: any) => {
+  const handleMapClick = (lat: number, lng: number, name?: string) => {
+    analyzeLocation(lat, lng, weights, businessType, name).then((loc: any) => {
       if (loc) {
         setCtxLocation(loc);
         setCtxBusinessType(businessType);
@@ -47,7 +52,7 @@ export function Dashboard() {
   // Re-run analysis if businessType or weights change while a location is selected
   useEffect(() => {
     if (selectedLocation) {
-      handleMapClick(selectedLocation.lat, selectedLocation.lng);
+      handleMapClick(selectedLocation.lat, selectedLocation.lng, selectedLocation.name);
     }
   }, [businessType, weights]);
 
@@ -67,7 +72,12 @@ export function Dashboard() {
           selectedLocation={selectedLocation}
           onMapClick={handleMapClick}
           businessType={businessType}
-          onBusinessTypeChange={setBusinessType}
+          onBusinessTypeChange={(type) => {
+            setBusinessType(type);
+            if (BUSINESS_WEIGHT_PRESETS[type]) {
+              setWeights(BUSINESS_WEIGHT_PRESETS[type]);
+            }
+          }}
           showHeatmap={showHeatmap}
           onToggleHeatmap={setShowHeatmap}
         />

@@ -155,11 +155,11 @@ export function Settings() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-gray-900 border-white/20">
-                      <SelectItem value="restaurant">🍽️ Restaurant</SelectItem>
-                      <SelectItem value="warehouse">📦 Warehouse</SelectItem>
-                      <SelectItem value="ev-station">⚡ EV Station</SelectItem>
-                      <SelectItem value="retail">🛍️ Retail Store</SelectItem>
-                      <SelectItem value="office">🏢 Office Space</SelectItem>
+                      <SelectItem value="restaurant">Restaurant</SelectItem>
+                      <SelectItem value="warehouse">Warehouse</SelectItem>
+                      <SelectItem value="ev-station">EV Station</SelectItem>
+                      <SelectItem value="retail">Retail Store</SelectItem>
+                      <SelectItem value="office">Office Space</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

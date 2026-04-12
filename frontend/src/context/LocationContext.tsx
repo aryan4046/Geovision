@@ -3,6 +3,7 @@ import type { LocationData } from "../app/components/dashboard/Dashboard";
 
 type LocationContextType = {
   selectedLocation: LocationData | null;
+  previousLocation: LocationData | null;
   setSelectedLocation: (loc: LocationData | null) => void;
   businessType: string;
   setBusinessType: (type: string) => void;
@@ -12,6 +13,7 @@ type LocationContextType = {
 
 const LocationContext = createContext<LocationContextType>({
   selectedLocation: null,
+  previousLocation: null,
   setSelectedLocation: () => {},
   businessType: "restaurant",
   setBusinessType: () => {},
@@ -20,13 +22,23 @@ const LocationContext = createContext<LocationContextType>({
 });
 
 export function LocationProvider({ children }: { children: ReactNode }) {
-  const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(null);
+  const [selectedLocation, setSelectedLocationState] = useState<LocationData | null>(null);
+  const [previousLocation, setPreviousLocation] = useState<LocationData | null>(null);
   const [businessType, setBusinessType] = useState("restaurant");
   const [weights, setWeights] = useState({ population: 50, accessibility: 50, competition: 50 });
 
+  const setSelectedLocation = (loc: LocationData | null) => {
+    // If setting a real location and it's different from the current one, push current to previous
+    if (loc && selectedLocation && (loc.lat !== selectedLocation.lat || loc.lng !== selectedLocation.lng)) {
+      setPreviousLocation(selectedLocation);
+    }
+    // If loc is null, don't clobber previousLocation so we can still compare
+    setSelectedLocationState(loc);
+  };
+
   return (
     <LocationContext.Provider value={{
-      selectedLocation, setSelectedLocation,
+      selectedLocation, previousLocation, setSelectedLocation,
       businessType, setBusinessType,
       weights, setWeights,
     }}>
@@ -36,3 +48,4 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 }
 
 export const useLocationContext = () => useContext(LocationContext);
+

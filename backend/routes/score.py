@@ -9,7 +9,7 @@ router = APIRouter()
 async def get_score(request: LocationRequest):
     try:
         population   = get_population_density(request.lat, request.lng)
-        competitors  = get_nearby_competitors(request.lat, request.lng)
+        competitors  = get_nearby_competitors(request.lat, request.lng, request.business_type)
         pois         = get_nearby_pois(request.lat, request.lng)
         accessibility = get_accessibility_score(pois)
 
@@ -25,7 +25,7 @@ async def get_score(request: LocationRequest):
             result.get("business_type", request.business_type)
         )
 
-        loc_name = get_location_name(request.lat, request.lng)
+        loc_name = request.location_name if getattr(request, 'location_name', None) else get_location_name(request.lat, request.lng)
         state_census = get_real_state_data(loc_name)
 
         result["explanation"] = explanation

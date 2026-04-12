@@ -8,7 +8,7 @@ router = APIRouter()
 async def get_chat_response(request: ChatRequest):
     try:
         # Pass the message to "query" matching the internal function signature
-        result = chat_response(query=request.message, history=None, context=request.context)
+        result = chat_response(query=request.message, history=request.history, context=request.context)
         
         # chat_response returns {"response": "..."} in fallback, ensure it handles output properly
         if isinstance(result, str):

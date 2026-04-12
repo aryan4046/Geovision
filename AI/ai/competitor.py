@@ -132,6 +132,18 @@ def analyze_competitor_impact(
         impact      = f"Critical — {comp_count} dominant competitor(s) drastically reduce market viability (−{score_change} pts)."
         risk_level  = "Critical"
 
+    # ── Competitor Randomization Logic ──────────────────────────────────────
+    import random
+    if comp_factor_with > 0.6:   # High competition
+        competitor_impact_number = random.randint(15, 20)
+        competitor_impact_level  = "High"
+    elif comp_factor_with > 0.3: # Normal competition
+        competitor_impact_number = random.randint(8, 14)
+        competitor_impact_level  = "Normal"
+    else:                        # Low competition
+        competitor_impact_number = random.randint(0, 7)
+        competitor_impact_level  = "Low"
+
     return {
         "impact":             impact,
         "score_change":       score_change,
@@ -140,6 +152,8 @@ def analyze_competitor_impact(
         "nearby_competitors": comp_count,
         "competitor_names":   [c.get("name", "Unknown") for c in nearby],
         "risk_level":         risk_level,
+        "competitor_impact_number": competitor_impact_number,
+        "competitor_impact_level":  competitor_impact_level,
     }
 
 

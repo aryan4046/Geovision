@@ -3,11 +3,11 @@ import { API_ENDPOINTS } from "../config/apiConfig";
 const BASE_URL = (import.meta as any).env?.VITE_API_URL || "http://127.0.0.1:8000";
 
 export const apiService = {
-  async fetchScore(lat: number, lng: number, weights: any, business_type: string) {
+  async fetchScore(lat: number, lng: number, weights: any, business_type: string, location_name?: string) {
     const response = await fetch(`${BASE_URL}${API_ENDPOINTS.GET_SCORE}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lat, lng, business_type, weights }),
+      body: JSON.stringify({ lat, lng, business_type, weights, location_name }),
     });
     if (!response.ok) throw new Error(`Failed to fetch score: ${response.statusText}`);
     return response.json();
@@ -23,11 +23,11 @@ export const apiService = {
     return response.json();
   },
 
-  async fetchRecommendations() {
+  async fetchRecommendations(lat?: number, lng?: number, business_type?: string) {
     const response = await fetch(`${BASE_URL}${API_ENDPOINTS.GET_RECOMMENDATIONS}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
+      body: JSON.stringify({ lat, lng, business_type }),
     });
     if (!response.ok) throw new Error(`Failed to fetch recommendations: ${response.statusText}`);
     return response.json();
@@ -51,11 +51,11 @@ export const apiService = {
     return response.json();
   },
 
-  async fetchComparison(loc1: { lat: number; lng: number }, loc2: { lat: number; lng: number }) {
+  async fetchComparison(loc1: { lat: number; lng: number }, loc2: { lat: number; lng: number }, business_type: string = "retail", weights: any = {}) {
     const response = await fetch(`${BASE_URL}${API_ENDPOINTS.COMPARE}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ location1: loc1, location2: loc2 }),
+      body: JSON.stringify({ location1: loc1, location2: loc2, business_type, weights }),
     });
     if (!response.ok) throw new Error(`Failed to fetch comparison: ${response.statusText}`);
     return response.json();
