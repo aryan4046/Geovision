@@ -23,7 +23,7 @@ export type LocationData = {
 
 export function Dashboard() {
   const { selectedLocation, loading, analyzeLocation, competitorImpact } = useLocationAnalysis();
-  const { setSelectedLocation: setCtxLocation, setBusinessType: setCtxBusinessType, setWeights: setCtxWeights } = useLocationContext();
+  const { selectedLocation: ctxSelectedLocation, setSelectedLocation: setCtxLocation, setBusinessType: setCtxBusinessType, setWeights: setCtxWeights } = useLocationContext();
 
   const BUSINESS_WEIGHT_PRESETS: Record<string, Weights> = {
     "retail":      { population: 80, accessibility: 40, competition: 70 },
@@ -49,6 +49,13 @@ export function Dashboard() {
     }).catch(() => {});
   };
 
+  // Trigger analysis if redirected from another page (like Recommendations) with a set context location
+  useEffect(() => {
+    if (ctxSelectedLocation && !selectedLocation && !loading) {
+      handleMapClick(ctxSelectedLocation.lat, ctxSelectedLocation.lng, ctxSelectedLocation.name);
+    }
+  }, [ctxSelectedLocation]);
+
   // Re-run analysis if businessType or weights change while a location is selected
   useEffect(() => {
     if (selectedLocation) {
@@ -56,10 +63,12 @@ export function Dashboard() {
     }
   }, [businessType, weights]);
 
-  // Also update context whenever selectedLocation changes
-  if (selectedLocation && !loading) {
-    setCtxLocation(selectedLocation);
-  }
+  // Also update context whenever local analysis completes successfully
+  useEffect(() => {
+    if (selectedLocation && !loading) {
+      setCtxLocation(selectedLocation);
+    }
+  }, [selectedLocation, loading]);
 
   return (
     <div className="h-screen w-full flex overflow-hidden" style={{ background: "linear-gradient(135deg, #04080f 0%, #080c18 50%, #0c0818 100%)" }}>

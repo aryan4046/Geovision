@@ -274,19 +274,28 @@ def fetch_recommendation_cluster(lat: float, lng: float, business_type: str = "r
     Generate fast dynamic recommendations near the given lat/lng.
     Bypasses slow OSM calls to ensure instantaneous response times and reliability.
     """
-    # 5 quadrants: NW, NE, SW, SE, Center
+    # 10 fixed quadrants relative to the searched center
     quadrants = [
-        {"name": "North West District", "lat": lat + 0.015, "lng": lng - 0.015, "comp_count": 0, "poi_count": 0},
-        {"name": "North East District", "lat": lat + 0.015, "lng": lng + 0.015, "comp_count": 0, "poi_count": 0},
-        {"name": "South West District", "lat": lat - 0.015, "lng": lng - 0.015, "comp_count": 0, "poi_count": 0},
-        {"name": "South East District", "lat": lat - 0.015, "lng": lng + 0.015, "comp_count": 0, "poi_count": 0},
-        {"name": "Central Hub",         "lat": lat,         "lng": lng,         "comp_count": 0, "poi_count": 0}
+        {"name": "Sector 1", "lat": lat + 0.015, "lng": lng - 0.015},
+        {"name": "Sector 2", "lat": lat + 0.015, "lng": lng + 0.015},
+        {"name": "Sector 3", "lat": lat - 0.015, "lng": lng - 0.015},
+        {"name": "Sector 4", "lat": lat - 0.015, "lng": lng + 0.015},
+        {"name": "Sector 5", "lat": lat,         "lng": lng        },
+        {"name": "Sector 6", "lat": lat + 0.025, "lng": lng        },
+        {"name": "Sector 7", "lat": lat - 0.025, "lng": lng        },
+        {"name": "Sector 8", "lat": lat,         "lng": lng + 0.025},
+        {"name": "Sector 9", "lat": lat,         "lng": lng - 0.025},
+        {"name": "Sector 10","lat": lat + 0.020, "lng": lng + 0.020}
     ]
     
     import random
+    # Select exactly 5 randomly from the 10 fixed points.
+    # This guarantees that ~2-3 will be the same if the exact same central lat/lng is queried multiple times.
+    selected = random.sample(quadrants, 5)
+    
     base_pop = get_population_density(lat, lng)
     
-    for q in quadrants:
+    for q in selected:
         pop_variance = random.uniform(0.8, 1.2)
         q_pop = base_pop * pop_variance
         
@@ -301,7 +310,7 @@ def fetch_recommendation_cluster(lat: float, lng: float, business_type: str = "r
             q["comp_count"] = random.randint(1, 6)
             q["poi_count"] = random.randint(3, 10)
             
-    return quadrants
+    return selected
 
 def get_nearby_competitors(lat: float, lng: float, business_type: str = "retail") -> list:
     """

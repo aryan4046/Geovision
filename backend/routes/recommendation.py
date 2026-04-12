@@ -43,12 +43,24 @@ async def get_recommendations(request: RecommendationRequest = RecommendationReq
                 c_lat, c_lng, pop, comps_mock, pois_mock, 0,
                 bus_type, {}
             )
+            # Fetch the real geographical name
+            real_name_full = get_location_name(c_lat, c_lng)
+            
+            # It usually returns "Road/Suburb, City". We split this.
+            parts = real_name_full.split(',')
+            area_name = parts[0].strip()
+            city_name = parts[-1].strip() if len(parts) > 1 else parts[0].strip()
+            
+            # If the API can only find the overarching city name without specific street data, 
+            # keep it pure without appending dummy sector strings.
+            if area_name == city_name and "Location" in area_name:
+                area_name = f"Grid {c_lat:.3f}, {c_lng:.3f}"
             
             import uuid
             candidates.append({
                 "id": str(uuid.uuid4())[:8],
-                "name": cluster["name"],
-                "city": get_location_name(c_lat, c_lng).split('-')[0].strip(),
+                "name": area_name,
+                "city": city_name,
                 "lat": c_lat,
                 "lng": c_lng,
                 "score": score_data.get("score", 50),

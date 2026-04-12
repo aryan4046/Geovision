@@ -8,7 +8,7 @@ import { useLocationContext } from "../../../context/LocationContext";
 
 export function Recommendations() {
   const navigate = useNavigate();
-  const { selectedLocation, businessType } = useLocationContext();
+  const { selectedLocation, setSelectedLocation, businessType } = useLocationContext();
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -188,7 +188,23 @@ export function Recommendations() {
                         View on Map
                       </Button>
                       <Button
-                        onClick={() => navigate("/reports")}
+                        onClick={() => {
+                          setSelectedLocation({
+                            lat: location.lat,
+                            lng: location.lng,
+                            name: location.name,
+                            score: location.score,
+                            population: location.factors?.population || 0,
+                            accessibility: location.factors?.accessibility || 0,
+                            competition: location.factors?.competition || 0,
+                            pois: location.factors?.pois || 0,
+                            strengths: [],
+                            weaknesses: [],
+                            opportunities: [],
+                            rawMetrics: {}
+                          });
+                          navigate("/reports");
+                        }}
                         variant="outline"
                         className="bg-white/5 border-white/10 text-white hover:bg-white/10"
                       >

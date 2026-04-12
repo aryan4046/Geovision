@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { LocationData } from "./Dashboard";
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap, Circle } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Tooltip, useMapEvents, useMap, Circle } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -235,12 +235,24 @@ export function MapView({
                 key={`topspot-${i}`} 
                 position={[spot.lat, spot.lng]} 
                 icon={L.divIcon({
-                  className: "custom-div-icon bg-transparent border-none",
-                  html: `<div style="background-color: #ec4899; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">${i + 1}</div>`,
+                  className: "custom-div-icon bg-transparent border-none outline-none",
+                  html: `<div style="background-color: #ec4899; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); cursor: pointer; transition: transform 0.2s ease;">${i + 1}</div>`,
                   iconSize: [30, 30],
                   iconAnchor: [15, 15]
                 })}
-             />
+                eventHandlers={{
+                  click: () => {
+                    if (onMapClick) {
+                      onMapClick(spot.lat, spot.lng, spot.name);
+                    }
+                  }
+                }}
+             >
+                <Tooltip direction="top" offset={[0, -15]} opacity={1}>
+                  <div className="font-bold text-sm text-purple-900">{spot.name}</div>
+                  {spot.city && <div className="text-xs text-gray-500">{spot.city}</div>}
+                </Tooltip>
+             </Marker>
           ))}
         </MapContainer>
       </div>
